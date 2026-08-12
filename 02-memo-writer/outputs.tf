@@ -1,0 +1,3 @@
+# TODO: output the API's invoke URL (the stage's invoke_url or api_endpoint)
+# so you can:  curl "$(tf output -raw api_url)/memo" ...
+# Bonus outputs: table name, secret name — handy for CLI verification.

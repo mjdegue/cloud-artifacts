@@ -8,9 +8,10 @@ Part of a self-directed AI Platform Engineering program: cloud infrastructure, c
 
 | # | Artifact | Stack | Status |
 |---|----------|-------|--------|
-| 1 | S3 module — versioned, encrypted bucket with policy-enforced encryption | Terraform, S3, IAM, boto3 | In progress |
+| 1 | S3 module — versioned, encrypted bucket with policy-enforced encryption, least-privilege IAM verified empirically | Terraform, S3, IAM, boto3 | ✅ Done |
+| 2 | AI Memo Writer — serverless LLM API: Lambda + API Gateway + DynamoDB + Secrets Manager | Terraform, Lambda, API Gateway, DynamoDB, Claude API | In progress |
 
-*(More coming: Lambda + API Gateway LLM service, ECS Fargate streaming API.)*
+*(More coming: ECS Fargate streaming API.)*
 
 ## Conventions
 

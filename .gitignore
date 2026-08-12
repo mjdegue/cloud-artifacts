@@ -13,6 +13,10 @@ override.tf.json
 .terraform.lock.hcl.backup
 tfplan
 
+# Lambda packaging artifacts
+**/lambda/package/
+*.zip
+
 # Python
 __pycache__/
 *.py[cod]

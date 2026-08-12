@@ -1,0 +1,22 @@
+terraform {
+  required_version = ">= 1.9"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+    # You'll likely want the "archive" provider for zipping the Lambda package:
+    # hashicorp/archive (~> 2.0) — provides the archive_file data source.
+  }
+}
+
+provider "aws" {
+  default_tags {
+    tags = {
+      project    = "cloud-artifacts"
+      artifact   = "02-memo-writer"
+      managed-by = "terraform"
+    }
+  }
+}
