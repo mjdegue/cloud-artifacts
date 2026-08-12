@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../ai-platform-course"
+		}
+	],
+	"settings": {
+		"editor.formatOnSave": true,
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": true,
+		"[python]": {
+			"editor.defaultFormatter": "charliermarsh.ruff",
+			"editor.codeActionsOnSave": {
+				"source.organizeImports.ruff": "explicit"
+			}
+		},
+		"[terraform]": {
+			"editor.defaultFormatter": "hashicorp.terraform"
+		},
+		"[terraform-vars]": {
+			"editor.defaultFormatter": "hashicorp.terraform"
+		},
+		"[javascript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[javascriptreact]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[json]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[jsonc]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[markdown]": {
+			"files.trimTrailingWhitespace": false
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"charliermarsh.ruff",
+			"hashicorp.terraform",
+			"esbenp.prettier-vscode"
+		]
+	}
+}
