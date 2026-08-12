@@ -15,3 +15,9 @@
 # Default is 30 days, which means `terraform destroy` only *schedules* deletion
 # and the name stays taken for a month. For a learning artifact you may want 0
 # (immediate delete). Decide deliberately.
+
+resource "aws_secretsmanager_secret" "anthropic_key" {
+  name                    = "anthropic-key"
+  recovery_window_in_days = 0
+  description             = "Anthropic API key for the AI Memo Writer Lambda"
+}
