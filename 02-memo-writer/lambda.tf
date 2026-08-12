@@ -8,6 +8,22 @@
 #   the Lambda service assumes this role and your code inherits its permissions.
 #   No access keys anywhere — compare with how YOU authenticate.
 
+resource "aws_iam_role" "memo_writer" {
+  name               = "memo-writer-lambda"
+  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+  description        = "Role used by the memo writer lambda to access the database."
+}
+
+data "aws_iam_policy_document" "lambda_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
 # ---------------------------------------------------------------------------
 # TODO 2: least-privilege permissions for that role
 # Resource type: aws_iam_role_policy (inline) + data.aws_iam_policy_document
@@ -19,6 +35,29 @@
 # Reference the secret and table ARNs from your other .tf files — same cross-
 # resource reference pattern as Week 1, now across files (same directory, same
 # state — files are just organization).
+
+resource "aws_iam_role_policy" "memo_writer_permissions" {
+  policy = data.aws_iam_policy_document.memo_writer_permissions.json
+  role   = aws_iam_role.memo_writer.id
+}
+
+data "aws_iam_policy_document" "memo_writer_permissions" {
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.anthropic_key.arn]
+  }
+
+  statement {
+    actions   = ["dynamodb:PutItem", "dynamodb:GetItem"]
+    resources = [aws_dynamodb_table.memos.arn]
+  }
+
+  statement {
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["arn:aws:logs:*"]
+  }
+
+}
 
 # ---------------------------------------------------------------------------
 # TODO 3: package the code — THE LAMBDA PACKAGING LESSON
