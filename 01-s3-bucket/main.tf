@@ -47,3 +47,38 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 #   Hint: condition key "s3:x-amz-server-side-encryption", and think about Null vs StringNotEquals.
 # - Write the JSON with jsonencode() rather than a heredoc string.
 # - Resource ARN for objects is the bucket arn + "/*" — bucket-level vs object-level ARNs matter here.
+
+resource "aws_s3_bucket_policy" "this_deny_unencrypted_put" {
+  bucket = aws_s3_bucket.this.id
+  policy = data.aws_iam_policy_document.this_deny_unencrypted_put.json
+}
+
+data "aws_iam_policy_document" "this_deny_unencrypted_put" {
+  statement {
+    sid    = "DenyUnencryptedObjects"
+    effect = "Deny"
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions = [
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.this.arn}/*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["AES256"]
+    }
+    condition {
+      test     = "Null"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["false"]
+    }
+  }
+}
