@@ -48,7 +48,7 @@ data "aws_iam_policy_document" "memo_writer_permissions" {
   }
 
   statement {
-    actions   = ["dynamodb:PutItem", "dynamodb:GetItem"]
+    actions   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem"]
     resources = [aws_dynamodb_table.memos.arn]
   }
 

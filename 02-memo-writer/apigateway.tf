@@ -40,6 +40,12 @@ resource "aws_apigatewayv2_route" "memo_api_get" {
   target    = "integrations/${aws_apigatewayv2_integration.memo_api_proxy.id}"
 }
 
+resource "aws_apigatewayv2_route" "memo_api_delete" {
+  api_id    = aws_apigatewayv2_api.memo_api.id
+  route_key = "DELETE /memo/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.memo_api_proxy.id}"
+}
+
 resource "aws_apigatewayv2_stage" "memo_api" {
   api_id      = aws_apigatewayv2_api.memo_api.id
   name        = "$default"

@@ -6,8 +6,7 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
-    # You'll likely want the "archive" provider for zipping the Lambda package:
-    # hashicorp/archive (~> 2.0) — provides the archive_file data source.
+
     archive = {
       source  = "hashicorp/archive"
       version = "~> 2.0"

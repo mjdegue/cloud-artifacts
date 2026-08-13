@@ -52,11 +52,13 @@ def handler(event, context):
                 return _create_memo(event)
             case "GET":
                 return _get_memo(event)
+            case "DELETE":
+                return _delete_memo(event)
             case _:
                 return _response(405, {"error": "method not allowed"})
     except Exception:
         logger.exception("Unhandled exception")
-        return _response(500, {"Ok": False})
+        return _response(500, {"error": "Internal server error"})
 
 
 def _create_memo(event):
@@ -76,6 +78,12 @@ def _create_memo(event):
 def _get_memo(event):
     # TODO: read the id from pathParameters, get_item from DynamoDB,
     #       404 if missing, else return the memo
+    raise NotImplementedError
+
+
+def _delete_memo(event):
+    # TODO: extra, delete memo
+
     raise NotImplementedError
 
 
