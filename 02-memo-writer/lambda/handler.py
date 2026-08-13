@@ -8,12 +8,16 @@ Work with the docs open:
   - anthropic SDK: https://github.com/anthropics/anthropic-sdk-python
   - boto3 dynamodb/secretsmanager: https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 """
+# TODO: imports you'll need — boto3, anthropic, uuid, time
 
 import json
 import logging
 import os
+import time
+import uuid
 
-# TODO: imports you'll need — boto3, anthropic, uuid, time
+import boto3
+from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,12 +27,12 @@ SECRET_NAME = os.environ["SECRET_NAME"]
 
 MODEL = "claude-haiku-4-5"  # cheap + fast; a memo costs a fraction of a cent
 
-# COLD START LESSON: module scope runs once per container, then is reused across
-# invocations. Expensive setup belongs HERE, not inside handler():
-# TODO: create boto3 clients here
-# TODO: fetch the secret here, create the Anthropic client here
-#   (fetching the secret once per container instead of once per request is the
-#    difference between one Secrets Manager call and thousands)
+SECRET_CLIENT = boto3.client("secretsmanager")
+# NOTE: the secret is stored as the bare API key, not JSON — parsing must match storage
+ANTHROPIC_API_KEY = SECRET_CLIENT.get_secret_value(SecretId=SECRET_NAME)["SecretString"]
+ANTHROPIC_CLIENT = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+DB_CLIENT = boto3.client("dynamodb")
 
 
 def handler(event, context):
@@ -40,11 +44,6 @@ def handler(event, context):
       event["pathParameters"]["id"]              -> the {id} from the route (GET)
     Log the whole event once while developing: logger.info(json.dumps(event))
     """
-    # TODO: route on the HTTP method -> _create_memo(event) or _get_memo(event)
-    # TODO: wrap in try/except; on failure log with logger.exception(...) and
-    #       return a 500 WITHOUT leaking internals to the caller. The traceback
-    #       goes to CloudWatch (your Week 1 logging lesson, now load-bearing —
-    #       this is exactly what you'll read when you break it on purpose).
 
     try:
         match event["requestContext"]["http"]["method"]:
@@ -62,29 +61,95 @@ def handler(event, context):
 
 
 def _create_memo(event):
-    # TODO 1: parse + validate the body: topic (required), audience, length
-    #         -> 400 with a helpful message if invalid
-    # TODO 2: call Claude. client.messages.create(model=MODEL, max_tokens=...,
-    #         system=..., messages=[{"role": "user", "content": ...}])
-    #         Write the system prompt yourself: what makes a good memo?
-    #         Response text lives in the content BLOCKS: pick the "text" block.
+
+    try:
+        parsed_body = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return _response(400, {"error": "body must be valid JSON"})
+
+    topic = parsed_body.get("topic")
+    audience = parsed_body.get("audience")
+    try:
+        length = int(parsed_body.get("length"))
+    except (TypeError, ValueError):
+        length = None
+
+    if topic is None or audience is None or length is None:
+        return _response(
+            422, {"error": "topic, audience and numeric length are required"}
+        )
+
+    if length > 400:
+        return _response(422, {"error": "Length is 400 as maximum"})
+
+    answer = ANTHROPIC_CLIENT.messages.create(
+        model=MODEL,
+        max_tokens=512,
+        system="You write crisp professional memos about incoming secified topics for audiences and specified length. Output only the memo text, no preamble. Also, there should be no item or information I should fill up myself such as time/date/etc",
+        messages=[
+            {
+                "role": "user",
+                "content": f"topic: {topic} audience: {audience} length: {length}",
+            }
+        ],
+    )
+
     # TODO 3: build the item: id (uuid), topic/audience/length, the memo,
     #         created_at, and expires_at = now + N days AS EPOCH SECONDS
     #         (must match the TTL attribute name in your table!)
+
+    generated_id = str(uuid.uuid4())
+    generated_memo = answer.content[0].text
+
+    now = int(time.time())
+    table_item = {
+        "id": {"S": generated_id},
+        "memo": {"S": generated_memo},
+        "created_at": {
+            "N": str(now),
+        },
+        "expires_at": {
+            "N": str(now + 1 * 86400),
+        },
+    }
+
     # TODO 4: put_item, then return _response(200, {"id": ..., "memo": ...})
-    raise NotImplementedError
+
+    put_item_response = DB_CLIENT.put_item(TableName=TABLE_NAME, Item=table_item)
+    logger.info(put_item_response)
+
+    return _response(200, {"id": generated_id, "memo": generated_memo})
 
 
 def _get_memo(event):
     # TODO: read the id from pathParameters, get_item from DynamoDB,
     #       404 if missing, else return the memo
-    raise NotImplementedError
+    get_item_response = DB_CLIENT.get_item(
+        TableName=TABLE_NAME, Key={"id": {"S": event["pathParameters"]["id"]}}
+    )
+
+    item = get_item_response.get("Item")
+    if item is None:
+        return _response(404, "Item not found")
+
+    answer_object = {
+        "id": item["id"]["S"],
+        "memo": item["memo"]["S"],
+    }
+    return _response(200, answer_object)
 
 
 def _delete_memo(event):
     # TODO: extra, delete memo
+    id_for_delete = event["pathParameters"]["id"]
+    delete_item_response = DB_CLIENT.delete_item(
+        TableName=TABLE_NAME, Key={"id": {"S": id_for_delete}}, ReturnValues="ALL_OLD"
+    )
+    old_item = delete_item_response.get("Attributes")
+    if old_item is None:
+        return _response(404, "Item not found")
 
-    raise NotImplementedError
+    return _response(200, {"deleted": id_for_delete})
 
 
 def _response(status, body):
