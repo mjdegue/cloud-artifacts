@@ -18,7 +18,7 @@ import os
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-TABLE_NAME = os.environ["TABLE_NAME"]       # set via Terraform env vars
+TABLE_NAME = os.environ["TABLE_NAME"]  # set via Terraform env vars
 SECRET_NAME = os.environ["SECRET_NAME"]
 
 MODEL = "claude-haiku-4-5"  # cheap + fast; a memo costs a fraction of a cent
@@ -45,7 +45,18 @@ def handler(event, context):
     #       return a 500 WITHOUT leaking internals to the caller. The traceback
     #       goes to CloudWatch (your Week 1 logging lesson, now load-bearing —
     #       this is exactly what you'll read when you break it on purpose).
-    raise NotImplementedError
+
+    try:
+        match event["requestContext"]["http"]["method"]:
+            case "POST":
+                return _create_memo(event)
+            case "GET":
+                return _get_memo(event)
+            case _:
+                return _response(405, {"error": "method not allowed"})
+    except Exception:
+        logger.exception("Unhandled exception")
+        return _response(500, {"Ok": False})
 
 
 def _create_memo(event):

@@ -76,6 +76,22 @@ data "aws_iam_policy_document" "memo_writer_permissions" {
 # Terraform knows when the code changed. (Real teams use CI or containers for
 # this; a local script is honest for now.)
 
+resource "aws_lambda_function" "memo_writer" {
+  role             = aws_iam_role.memo_writer.arn
+  function_name    = "memo-writer"
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+  runtime          = "python3.13"
+  handler          = "handler.handler"
+  timeout          = 60
+  environment {
+    variables = {
+      TABLE_NAME  = aws_dynamodb_table.memos.name
+      SECRET_NAME = aws_secretsmanager_secret.anthropic_key.name
+    }
+  }
+}
+
 # ---------------------------------------------------------------------------
 # TODO 4: the function itself
 # Resource type: aws_lambda_function
